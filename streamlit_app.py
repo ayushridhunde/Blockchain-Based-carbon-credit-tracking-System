@@ -10,7 +10,7 @@ from datetime import datetime
 st.set_page_config(page_title="Carbon Credit Blockchain", layout="wide")
 
 # --- 2. BLOCKCHAIN CONNECTION SETUP ---
-w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:7545'))
+w3 = Web3(Web3.HTTPProvider(st.secrets["ALCHEMY_URL"]))
 contract_address = w3.to_checksum_address("0x9BBfACd347eA9526B3CF9cE2F8A9c16DFC95777d")
 
 # Complete ABI (Application Binary Interface)
