@@ -4,6 +4,7 @@ import os
 import json
 import pandas as pd
 from dotenv import load_dotenv
+import datetime # Import ko upar rakhein
 
 # 1. Load environment variables
 load_dotenv()
@@ -13,7 +14,6 @@ sender_address = os.getenv("SENDER_ADDRESS")
 private_key = os.getenv("PRIVATE_KEY")
 
 # 2. Setup ABI and Web3 connection
-# Ensure your abi.json is in the same folder
 with open("abi.json") as f:
     contract_abi = json.load(f)
 
@@ -27,13 +27,10 @@ if 'logged_in' not in st.session_state:
 # --- LOGIN PAGE ---
 def login_page():
     st.markdown("<h1 style='text-align: center;'>🔐 Carbon Tracker Login</h1>", unsafe_allow_html=True)
-    
     with st.container():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-        
         if st.button("Login", use_container_width=True):
-            # Using your requested credentials
             if username == "admin" and password == "admin123":
                 st.session_state.logged_in = True
                 st.rerun()
@@ -42,20 +39,17 @@ def login_page():
 
 # --- MAIN DASHBOARD ---
 def main_dashboard():
-    # Sidebar Settings
     st.sidebar.title("Settings")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.rerun()
 
-    # Connection Status
     if w3.is_connected():
         st.sidebar.success("Connected to Sepolia")
     else:
         st.sidebar.error("Connection Failed")
 
     st.title("🌱 Blockchain Carbon Credit Tracker")
-    
     tab1, tab2 = st.tabs(["➕ Add Credits", "📜 View History"])
 
     with tab1:
@@ -67,22 +61,15 @@ def main_dashboard():
             if company:
                 try:
                     with st.spinner("Processing transaction..."):
-                        # Get the latest transaction count
                         nonce = w3.eth.get_transaction_count(sender_address)
-                        
-                        # Build the transaction
                         tx = contract.functions.addCredit(company, amount).build_transaction({
                             'chainId': 11155111,
                             'gas': 200000,
                             'gasPrice': w3.eth.gas_price,
                             'nonce': nonce,
                         })
-                        
-                        # Sign and Send
                         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-                        # Fix: Use raw_transaction instead of rawTransaction
                         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction) 
-                        
                         st.success(f"Transaction Sent! Hash: {w3.to_hex(tx_hash)}")
                 except Exception as e:
                     st.error(f"Blockchain Error: {e}")
@@ -93,12 +80,12 @@ def main_dashboard():
         st.header("Carbon Credit Ledger")
         if st.button("Fetch Latest Data"):
             try:
-                # Call the getCredits function from your Smart Contract
                 data = contract.functions.getCredits().call()
                 if data:
-                    # Convert list to a clean Table using Pandas
                     df = pd.DataFrame(data, columns=["Company Name", "Credits (Tons)", "Timestamp"])
-                    st.table(df) # Display as a clean table
+                    # FIXED: Formatting yahan honi chahiye
+                    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s').dt.strftime('%d-%m-%Y %H:%M')
+                    st.table(df)
                 else:
                     st.info("No records found on the blockchain.")
             except Exception as e:
@@ -109,5 +96,3 @@ if not st.session_state.logged_in:
     login_page()
 else:
     main_dashboard()
-    import datetime
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s').dt.strftime('%d-%m-%y %H:%M')
