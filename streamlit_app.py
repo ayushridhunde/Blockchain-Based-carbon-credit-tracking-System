@@ -58,33 +58,33 @@ def main_dashboard():
         amount = st.number_input("Credit Amount (Tons)", min_value=1)
         
         if st.button("Submit to Blockchain"):
-            import streamlit as st
             if st.button("Register Carbon Credit"):
-                if company_name and amount > 0:
-        try:
-            with st.spinner("Broadcasting transaction to Ethereum Sepolia..."):
-                # 1. Trigger the Smart Contract function
-                # This returns the raw Transaction Hash (HexBytes)
+                if company_name and amount > 0: # Ensure variable names match your input fields
+                    try:
+            # Step 1: Trigger the transaction
+            with st.spinner("Processing transaction on Ethereum Sepolia..."):
                 tx_hash = contract.functions.addCredit(company_name, int(amount)).transact()
-
-                # 2. Wait for the block to be mined (Optional, but looks professional)
-                receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-
-                # 3. Success Message
-                st.success("Transaction Successful!")
-                st.balloons() # Visual effect for the presentation
-
-                # 4. Display the Hash ID directly on the screen
-                # Use .hex() to convert the raw bytes into a readable string
-                hash_id = tx_hash.hex()
                 
+                # Step 2: Convert Hash to readable string
+                hash_id = tx_hash.hex() 
+                
+                # Step 3: Success UI
+                st.success("Transaction Successful!")
+                st.balloons()
+                
+                # Step 4: Display Hash ID clearly for the examiner
                 st.subheader("Blockchain Receipt")
                 st.info(f"**Transaction Hash ID:**")
-                st.code(hash_id) # This adds a 'copy' button automatically
-
-                # 5. Create a direct hyperlink to Etherscan for the examiner
-                etherscan_link = f"https://sepolia.etherscan.io/tx/{hash_id}"
-                st.markdown(f"🔗 [View Live on Sepolia Etherscan]({etherscan_link})")
+                st.code(hash_id) # This adds a copy button automatically
+                
+                # Step 5: Direct Link to Etherscan
+                etherscan_url = f"https://sepolia.etherscan.io/tx/{hash_id}"
+                st.link_button("Verify on Etherscan", etherscan_url)
+                
+        except Exception as e:
+            st.error(f"Blockchain Error: {e}")
+    else:
+        st.warning("Please enter a valid company name and amount.")
 
         except Exception as e:
             st.error(f"Transaction Failed: {e}")
