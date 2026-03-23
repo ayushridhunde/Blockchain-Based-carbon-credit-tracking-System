@@ -58,6 +58,40 @@ def main_dashboard():
         amount = st.number_input("Credit Amount (Tons)", min_value=1)
         
         if st.button("Submit to Blockchain"):
+            import streamlit as st
+
+# Assuming 'w3' is your Web3 instance and 'contract' is your Smart Contract object
+if st.button("Register Carbon Credit"):
+    if company_name and amount > 0:
+        try:
+            with st.spinner("Broadcasting transaction to Ethereum Sepolia..."):
+                # 1. Trigger the Smart Contract function
+                # This returns the raw Transaction Hash (HexBytes)
+                tx_hash = contract.functions.addCredit(company_name, int(amount)).transact()
+
+                # 2. Wait for the block to be mined (Optional, but looks professional)
+                receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+                # 3. Success Message
+                st.success("Transaction Successful!")
+                st.balloons() # Visual effect for the presentation
+
+                # 4. Display the Hash ID directly on the screen
+                # Use .hex() to convert the raw bytes into a readable string
+                hash_id = tx_hash.hex()
+                
+                st.subheader("Blockchain Receipt")
+                st.info(f"**Transaction Hash ID:**")
+                st.code(hash_id) # This adds a 'copy' button automatically
+
+                # 5. Create a direct hyperlink to Etherscan for the examiner
+                etherscan_link = f"https://sepolia.etherscan.io/tx/{hash_id}"
+                st.markdown(f"🔗 [View Live on Sepolia Etherscan]({etherscan_link})")
+
+        except Exception as e:
+            st.error(f"Transaction Failed: {e}")
+    else:
+        st.warning("Please enter valid company details and credit amount.")
             if company:
                 try:
                     with st.spinner("Processing transaction..."):
