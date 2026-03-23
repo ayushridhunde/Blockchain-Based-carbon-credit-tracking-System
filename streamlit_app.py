@@ -59,10 +59,8 @@ def main_dashboard():
         
         if st.button("Submit to Blockchain"):
             import streamlit as st
-
-# Assuming 'w3' is your Web3 instance and 'contract' is your Smart Contract object
-if st.button("Register Carbon Credit"):
-    if company_name and amount > 0:
+            if st.button("Register Carbon Credit"):
+                if company_name and amount > 0:
         try:
             with st.spinner("Broadcasting transaction to Ethereum Sepolia..."):
                 # 1. Trigger the Smart Contract function
