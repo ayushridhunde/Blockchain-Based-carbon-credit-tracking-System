@@ -73,9 +73,19 @@ def main_dashboard():
                         })
                         
                         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-                        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction) 
+                        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+                        readable_hash = w3.to_hex(tx_hash)
                         
-                        st.success(f"Transaction Sent! Hash: {w3.to_hex(tx_hash)}")
+                        # --- PROFESSIONAL RECEIPT UI ---
+                        st.success("Transaction Successful!")
+                        
+                        st.markdown("### 🔗 Blockchain Receipt")
+                        st.code(readable_hash, language="text")
+                        
+                        # Link to Etherscan (Sepolia)
+                        etherscan_url = f"https://sepolia.etherscan.io/tx/{readable_hash}"
+                        st.link_button("Verify on Etherscan", etherscan_url)
+
                 except Exception as e:
                     st.error(f"Blockchain Error: {e}")
             else:
@@ -87,7 +97,6 @@ def main_dashboard():
             try:
                 data = contract.functions.getCredits().call()
                 if data:
-                    # FIX: Define df here so it is available for formatting
                     df = pd.DataFrame(data, columns=["Company Name", "Credits (Tons)", "Timestamp"])
                     
                     # Convert Unix timestamp to readable date-time format
