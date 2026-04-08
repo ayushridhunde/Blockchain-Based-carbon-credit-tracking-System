@@ -13,12 +13,8 @@ sender_address = os.getenv("SENDER_ADDRESS")
 private_key = os.getenv("PRIVATE_KEY")
 
 # 2. Setup ABI and Web3 connection
-# Ensure abi.json exists in your folder
-try:
-    with open("abi.json") as f:
-        contract_abi = json.load(f)
-except FileNotFoundError:
-    st.error("abi.json file not found! Please upload it to your repository.")
+with open("abi.json") as f:
+    contract_abi = json.load(f)
 
 w3 = Web3(Web3.HTTPProvider(infura_url))
 contract = w3.eth.contract(address=contract_address, abi=contract_abi)
@@ -30,9 +26,11 @@ if 'logged_in' not in st.session_state:
 # --- LOGIN PAGE ---
 def login_page():
     st.markdown("<h1 style='text-align: center;'>🔐 Carbon Tracker Login</h1>", unsafe_allow_html=True)
+    
     with st.container():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
+        
         if st.button("Login", use_container_width=True):
             if username == "admin" and password == "admin123":
                 st.session_state.logged_in = True
@@ -53,6 +51,7 @@ def main_dashboard():
         st.sidebar.error("Connection Failed")
 
     st.title("🌱 Blockchain Carbon Credit Tracker")
+    
     tab1, tab2 = st.tabs(["➕ Add Credits", "📜 View History"])
 
     with tab1:
@@ -61,57 +60,40 @@ def main_dashboard():
         amount = st.number_input("Credit Amount (Tons)", min_value=1)
         
         if st.button("Submit to Blockchain"):
-            if company and amount > 0:
+            if company:
                 try:
                     with st.spinner("Processing transaction..."):
-                        # Get the latest nonce
                         nonce = w3.eth.get_transaction_count(sender_address)
                         
-                        # Build the transaction
                         tx = contract.functions.addCredit(company, amount).build_transaction({
-                            'chainId': 11155111, # Sepolia Chain ID
+                            'chainId': 11155111,
                             'gas': 200000,
                             'gasPrice': w3.eth.gas_price,
                             'nonce': nonce,
                         })
                         
-                        # Sign the transaction
                         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+                        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction) 
                         
-                        # Send the transaction
-                        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-                        
-                        # Wait for transaction to be mined
-                        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-                        
-                        # DISPLAY RESULTS
-                        st.success("Transaction Successful!")
-                        st.balloons()
-                        
-                        hash_id = tx_hash.hex()
-                        st.subheader("🔗 Blockchain Receipt")
-                        st.code(hash_id)
-                        
-                        etherscan_url = f"https://sepolia.etherscan.io/tx/{hash_id}"
-                        st.link_button("Verify on Etherscan", etherscan_url)
-                        
+                        st.success(f"Transaction Sent! Hash: {w3.to_hex(tx_hash)}")
                 except Exception as e:
                     st.error(f"Blockchain Error: {e}")
             else:
-                st.warning("Please enter a valid company name and amount.")
+                st.warning("Please enter a company name.")
 
     with tab2:
         st.header("Carbon Credit Ledger")
         if st.button("Fetch Latest Data"):
             try:
-                # Assuming your contract function is called getCredits() or getHistory()
-                # Update this name to match your Solidity function
-                data = contract.functions.getCredits().call() 
+                data = contract.functions.getCredits().call()
                 if data:
+                    # FIX: Define df here so it is available for formatting
                     df = pd.DataFrame(data, columns=["Company Name", "Credits (Tons)", "Timestamp"])
-                    # Convert UNIX timestamp to readable format
-                    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s').dt.strftime('%d-%m-%Y %H:%M')
-                    st.table(df)
+                    
+                    # Convert Unix timestamp to readable date-time format
+                    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s').dt.strftime('%d-%m-%y %H:%M')
+                    
+                    st.table(df) 
                 else:
                     st.info("No records found on the blockchain.")
             except Exception as e:
